@@ -1,5 +1,7 @@
 // Sample LESS/CSS file
 
+@myVar: 12px;
+
 #myDiv {
 	color:#FF0;
 	border-style:solid; border-width: 1px + 5; border-color:#FF0000;
@@ -13,11 +15,17 @@ div li.test a:hover
   font-decoration:underline;
   /* Why would you stick a comment here?!?!?! */
   background-image:url("img/this isn't a very well-named image.png");
+  margin-bottom: @myVar;
 }
 
 #mainContent {
 	color:black;
 	.offset {
 	  color:blue;
+	  padding-bottom: @myVar / 2;
 	}
 }
+
+.simpleAddition {color: #800000 + 5 + 10 + 15}
+.colorAddition {color: #803000 + rgb(10,5,30)}
+
