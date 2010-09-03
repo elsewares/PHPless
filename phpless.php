@@ -74,6 +74,8 @@ while ($i < count($source)) {
 					$part = "rgb($r,$g,$b)";
 				}		
 			}
+			unset($part); // Break link
+			
 			$j = 1;
 			while ($j < count($parts)) {
 				$part = $parts[$j];
