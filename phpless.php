@@ -39,6 +39,11 @@ while ($i < count($source)) {
 		}
 	} elseif (substr($line,0,1) == '@') {
 		// Variable definition
+		$pos = strpos($line, ':');
+		$name = substr($line,1,$pos-1);
+		$value = substr($line,$pos+1);
+		if (substr($value,-1) == ';') $value = substr($value,0,-1);
+		$variables[$name] = $value;
 	} elseif (substr($line, -1) == '{') {
 		// Defines the beginning of a group
 		$name = substr($line, 0, -1); // Trim trailing brace
@@ -72,7 +77,11 @@ while ($i < count($source)) {
 						$b = hexdec(substr($part,5,2));
 					}
 					$part = "rgb($r,$g,$b)";
-				}		
+				} elseif (substr($part, 0, 1) == '@') {
+					// Variable replacement
+					$var_name = substr($part,1);
+					if (array_key_exists($var_name, $variables)) $part = $variables[$var_name];
+				}
 			}
 			unset($part); // Break link
 			
