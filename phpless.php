@@ -79,19 +79,121 @@ while ($i < count($source)) {
 			$j = 1;
 			while ($j < count($parts)) {
 				$part = $parts[$j];
-				if ($part == '+') {
-					// Add the next element to the prior
+				if ($part == '+' || $part == '-') {
+					// Add or subtract the next element to the prior
 					if (substr($parts[$j-1],0,3) == 'rgb') {
 						// Color mode
+						$pos = strpos($parts[$j-1], '(');
+						list($r,$g,$b,$a) = explode(',', substr($parts[$j-1],$pos+1, -1));
+						if (substr($parts[$j+1],0,3) == 'rgb') {
+							// Adding color to color
+							$pos = strpos($parts[$j+1], '(');
+							list($nr, $ng, $nb, $na) = explode(',', substr($parts[$j+1],$pos+1, -1));
+							if ($part == '+') {
+								$r += $nr;
+								$g += $ng;
+								$b += $nb;
+								$a += $na;
+								if ($r > 255) $r = 255;
+								if ($g > 255) $g = 255;
+								if ($b > 255) $b = 255;
+								if ($a > 255) $a = 255;
+							} elseif ($part == '-') {
+								$r -= $nr;
+								$g -= $ng;
+								$b -= $nb;
+								$a -= $na;
+								if ($r < 0) $r = 0;
+								if ($g < 0) $g = 0;
+								if ($b < 0) $b = 0;
+								if ($a < 0) $a = 0;
+							}
+							$value = ($a == NULL)? "rgb($r,$g,$b)" : "rgba($r,$g,$b,$a)";
+							$parts[$j-1] = $value; // Replace original with result
+							$parts = array_merge(array_slice($parts,0,$j), array_slice($parts,$j+2)); // Cut out operand and next item;
+							$j--; // Jump pointer back one
+						} else {
+							// Adding integer to color
+							if ($part == '+') {
+								$r += $parts[$j+1];
+								$g += $parts[$j+1];
+								$b += $parts[$j+1];
+								if ($a != NULL) $a += $parts[$j+1];
+								if ($r > 255) $r = 255;
+								if ($g > 255) $g = 255;
+								if ($b > 255) $b = 255;
+								if ($a > 255) $a = 255;
+							} elseif ($part == '-') {
+								$r -= $parts[$j+1];
+								$g -= $parts[$j+1];
+								$b -= $parts[$j+1];
+								if ($a != NULL) $a -= $parts[$j+1];
+								if ($r < 0) $r = 0;
+								if ($g < 0) $g = 0;
+								if ($b < 0) $b = 0;
+								if ($a < 0) $a = 0;
+							}
+							$value = ($a == NULL)? "rgb($r,$g,$b)" : "rgba($r,$g,$b,$a)";
+							$parts[$j-1] = $value; // Replace original with result
+							$parts = array_merge(array_slice($parts,0,$j), array_slice($parts,$j+2)); // Cut out operand and next item;
+							$j--; // Jump pointer back one
+						}
 					} else {
-						// Integer mode
+						// Numeric mode
+						$num = intval($parts[$j-1]).""; // Intval will take the trailing 'px', 'pt', 'em', or '%' off the end. Then concat it with an empty string to keep it a string...
+						$unit = substr($parts[$j-1], strlen($num)); // ...so we can use strlen on it
+						$new_num = intval($parts[$j+1]);
+						if ($part == '+') {
+							$num += $new_num;
+						} elseif ($part == '-') {
+							$num -= $new_num;
+						}
+						$parts[$j-1] = $num.$unit; // Replace original with result
+						$parts = array_merge(array_slice($parts,0,$j), array_slice($parts,$j+2)); // Cut out operand and next item;
+						$j--; // Jump pointer back one
 					}
-				} elseif ($part == '-') {
-					// Subtract the next element from the prior
+				} elseif ($part == '*' || $part == '/') {
+					// Multiply or divide the next element from the prior
+					$new_num = intval($parts[$j+1]); // Following element must be an integer
+					if (substr($parts[$j-1],0,3) == 'rgb') {
+						// Color mode
+						$pos = strpos($parts[$j-1], '(');
+						list($r,$g,$b,$a) = explode(',', substr($parts[$j-1],$pos+1, -1));
+						if ($part == '*') {
+							$r = $r*$new_num;
+							$g = $g*$new_num;
+							$b = $b*$new_num;
+							if ($a != NULL) $a = $a*$new_num;
+							if ($r > 255) $r = 255;
+							if ($g > 255) $g = 255;
+							if ($b > 255) $b = 255;
+							if ($a > 255) $a = 255;
+						} elseif ($part == '/') {
+							$r = $r/$new_num;
+							$g = $g/$new_num;
+							$b = $b/$new_num;
+							if ($a != NULL) $a = $a/$new_num;
+						}
+						$value = ($a == NULL)? "rgb($r,$g,$b)" : "rgba($r,$g,$b,$a)";
+						$parts[$j-1] = $value; // Replace original with result
+						$parts = array_merge(array_slice($parts,0,$j), array_slice($parts,$j+2)); // Cut out operand and next item;
+						$j--; // Jump pointer back one
+					} else {
+						// Numeric mode
+						$num = intval($parts[$j-1]).""; // Intval will take the trailing unit label off the end. Then concat it with an empty string to keep it a string...
+						$unit = substr($parts[$j-1], strlen($num)); // ...so we can use strlen on it.
+						if ($part == '*') {
+							$num = $num*$new_num;
+						} elseif ($part == '/') {
+							$num = $num/$new_num;
+						}
+						$parts[$j-1] = $num.$unit; // Replace original with result
+						$parts = array_merge(array_slice($parts,0,$j), array_slice($parts,$j+2)); // Cut out operand and next item;
+						$j--; // Jump pointer back one
+					}
 				}
 				$j++; // Move to next part
 			}
-			
 			$value = implode(" ", $parts);
 			
 			$str = implode(" ", $curElement);
